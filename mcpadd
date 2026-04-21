@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+# Add one or more MCP servers to Claude Code by name
+# Usage: mcpadd [--scope SCOPE] NAME [NAME2 NAME3 ...]
+#
+# For servers that require a local clone, set MCP_SRC_DIR (default: $HOME/src)
+
+set -euo pipefail
+
+SCOPE="local"
+if [[ "${1:-}" == "--scope" ]]; then
+  if [[ -z "${2:-}" ]]; then
+    echo "Error: --scope requires an argument" >&2
+    exit 1
+  fi
+  SCOPE="$2"
+  shift 2
+fi
+
+if [ "$#" -lt 1 ]; then
+  echo "Usage: mcpadd [--scope SCOPE] NAME [NAME ...]" >&2
+  exit 1
+fi
+
+SRC_DIR="${MCP_SRC_DIR:-$HOME/src}"
+
+# Clone a repo and build with npm if not already present
+ensure_npm_clone() {
+  local repo_url="$1"
+  local dir="$2"
+  if [ ! -d "$dir" ]; then
+    echo "Cloning $repo_url into $dir..."
+    git clone "$repo_url" "$dir"
+    (cd "$dir" && npm install && npm run build)
+  fi
+}
+
+add_one() {
+  local NAME="$1"
+  case "$NAME" in
+    Context7)
+      claude mcp add -s "$SCOPE" Context7 -- npx -y @upstash/context7-mcp@latest
+      ;;
+    sequential-thinking)
+      claude mcp add -s "$SCOPE" sequential-thinking -- npx -y @modelcontextprotocol/server-sequential-thinking
+      ;;
+    foundry-mcp-server)
+      claude mcp add -s "$SCOPE" foundry-mcp-server -- npx -y @pranesh.asp/foundry-mcp-server
+      ;;
+    rust-docs)
+      local dir="$SRC_DIR/rust-docs-mcp-server"
+      ensure_npm_clone "https://github.com/Govcraft/rust-docs-mcp-server" "$dir"
+      claude mcp add -s "$SCOPE" rust-docs -- node "$dir/build/index.js"
+      ;;
+    fetch)
+      claude mcp add -s "$SCOPE" fetch -- uvx mcp-server-fetch
+      ;;
+    pdf-reader)
+      claude mcp add -s "$SCOPE" pdf-reader -- uvx mcp-read-pdf
+      ;;
+    xcode)
+      local dir="$SRC_DIR/xcode-mcp-server"
+      ensure_npm_clone "https://github.com/r-huijts/xcode-mcp-server" "$dir"
+      claude mcp add -s "$SCOPE" xcode -- node "$dir/build/index.js"
+      ;;
+    perplexity-ask)
+      if [ -z "${PERPLEXITY_API_KEY:-}" ]; then
+        echo "Error: PERPLEXITY_API_KEY not set." >&2
+        return 1
+      fi
+      claude mcp add -s "$SCOPE" perplexity-ask \
+        --env PERPLEXITY_API_KEY="$PERPLEXITY_API_KEY" \
+        -- npx -y server-perplexity-ask
+      ;;
+    calculator)
+      claude mcp add -s "$SCOPE" calculator -- uvx mcp-server-calculator
+      ;;
+    playwright)
+      claude mcp add -s "$SCOPE" playwright -- npx -y @executeautomation/playwright-mcp-server
+      ;;
+    n8n)
+      : "${N8N_API_URL:=http://localhost:5678/api/v1}"
+      if [ -z "${N8N_API_KEY:-}" ]; then
+        echo "Error: N8N_API_KEY not set." >&2
+        return 1
+      fi
+      claude mcp add -s "$SCOPE" n8n \
+        --env N8N_API_URL="$N8N_API_URL" \
+        --env N8N_API_KEY="$N8N_API_KEY" \
+        -- npx -y n8n-mcp-server
+      ;;
+    brave-search)
+      if [ -z "${BRAVE_API_KEY:-}" ]; then
+        echo "Error: BRAVE_API_KEY not set." >&2
+        return 1
+      fi
+      claude mcp add -s "$SCOPE" brave-search \
+        --env BRAVE_API_KEY="$BRAVE_API_KEY" \
+        -- npx -y @modelcontextprotocol/server-brave-search
+      ;;
+    mindmap)
+      claude mcp add -s "$SCOPE" mindmap -- uvx mindmap-mcp-server --return-type html
+      ;;
+    puppeteer)
+      : "${PUPPETEER_ARGS:='{\"headless\":false}'}"
+      claude mcp add -s "$SCOPE" puppeteer \
+        --env "PUPPETEER_ARGS=${PUPPETEER_ARGS}" \
+        -- npx -y github:afshawnlotfi/mcp-configurable-puppeteer
+      ;;
+    tree-sitter-mcp)
+      claude mcp add-json -s "$SCOPE" tree-sitter-mcp \
+        "{\"command\": \"sh\", \"args\": [\"-c\", \"cd \\\"$(pwd)\\\" && npx @nendo/tree-sitter-mcp --mcp\"]}"
+      ;;
+    iterm-mcp)
+      claude mcp add -s "$SCOPE" iterm-mcp -- npx -y iterm-mcp
+      ;;
+    repowise)
+      # repowise is ALWAYS project scope — shared via .mcp.json, never user/global
+      if [[ "$SCOPE" != "project" ]]; then
+        echo "Note: repowise is always added at project scope (ignoring --scope $SCOPE)"
+      fi
+      if ! command -v repowise &>/dev/null; then
+        echo "repowise not found — installing via uv..."
+        if ! uv tool install repowise; then
+          echo "Error: failed to install repowise" >&2
+          return 1
+        fi
+      fi
+      if [ ! -d "$(pwd)/.repowise" ]; then
+        echo "No .repowise index found — running repowise init (~25 min, ~\$50 in LLM API costs)..."
+        if ! repowise init "$(pwd)"; then
+          echo "Error: repowise init failed" >&2
+          return 1
+        fi
+      fi
+      claude mcp add-json -s project repowise \
+        "{\"command\": \"repowise\", \"args\": [\"mcp\", \"$(pwd)\"], \"description\": \"repowise: codebase intelligence — docs, graph, git signals, dead code, decisions\"}"
+      ;;
+    cerebra-legal)
+      # project/local scope only — never user or global
+      if [[ "$SCOPE" == "user" || "$SCOPE" == "global" ]]; then
+        echo "Error: cerebra-legal must be at project or local scope, not $SCOPE" >&2
+        return 1
+      fi
+      local dir="$SRC_DIR/mcp-cerebra-legal-server"
+      ensure_npm_clone "https://github.com/yoda-digital/mcp-cerebra-legal-server" "$dir"
+      claude mcp add -s "$SCOPE" cerebra-legal -- node "$dir/build/index.js"
+      ;;
+    us-legal)
+      # project/local scope only — never user or global
+      if [[ "$SCOPE" == "user" || "$SCOPE" == "global" ]]; then
+        echo "Error: us-legal must be at project or local scope, not $SCOPE" >&2
+        return 1
+      fi
+      if [ -z "${CONGRESS_API_KEY:-}" ]; then
+        echo "Warning: CONGRESS_API_KEY not set — Congress.gov search will not work" >&2
+      fi
+      if [ -z "${COURT_LISTENER_API_KEY:-}" ]; then
+        echo "Warning: COURT_LISTENER_API_KEY not set — CourtListener search will not work" >&2
+      fi
+      claude mcp add -s "$SCOPE" us-legal \
+        --env CONGRESS_API_KEY="${CONGRESS_API_KEY:-}" \
+        --env COURT_LISTENER_API_KEY="${COURT_LISTENER_API_KEY:-}" \
+        -- npx -y us-legal-mcp
+      ;;
+    *)
+      echo "Unknown MCP server: $NAME" >&2
+      return 2
+      ;;
+  esac
+}
+
+status=0
+for NAME in "$@"; do
+  echo "→ Adding: $NAME (scope=$SCOPE)"
+  if ! add_one "$NAME"; then
+    echo "✗ Failed: $NAME" >&2
+    status=1
+  else
+    echo "✓ Added:  $NAME"
+  fi
+done
+
+exit $status

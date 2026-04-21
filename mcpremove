@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# Remove one or more MCP servers from Claude Code by name
+# Usage:
+#   mcpremove [--scope SCOPE] NAME [NAME2 ...]
+#   mcpremove [--scope SCOPE] --all
+#
+# Examples:
+#   mcpremove rust-docs fetch
+#   mcpremove --scope user rust-docs
+#   mcpremove --scope user --all
+#   mcpremove --scope local iterm-mcp
+
+set -euo pipefail
+
+SCOPE="local"
+ALL=false
+NAMES=()
+
+# Known server names (used by --all)
+ALL_NAMES=(
+  Context7
+  sequential-thinking
+  foundry-mcp-server
+  rust-docs
+  fetch
+  pdf-reader
+  xcode
+  perplexity-ask
+  calculator
+  playwright
+  n8n
+  brave-search
+  mindmap
+  puppeteer
+  tree-sitter-mcp
+  iterm-mcp
+  repowise
+  cerebra-legal
+  us-legal
+)
+
+# Parse args
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --scope)
+      if [[ -z "${2:-}" ]]; then
+        echo "Error: --scope requires an argument" >&2
+        exit 1
+      fi
+      SCOPE="$2"
+      shift 2
+      ;;
+    --all)
+      ALL=true
+      shift
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      NAMES+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if $ALL; then
+  NAMES=("${ALL_NAMES[@]}")
+fi
+
+if [[ ${#NAMES[@]} -eq 0 ]]; then
+  echo "Usage: mcpremove [--scope SCOPE] NAME [NAME ...] | [--scope SCOPE] --all" >&2
+  exit 1
+fi
+
+# Some servers are always registered at a fixed scope regardless of --scope
+effective_scope() {
+  case "$1" in
+    repowise) echo "project" ;;
+    *) echo "$SCOPE" ;;
+  esac
+}
+
+status=0
+for NAME in "${NAMES[@]}"; do
+  ESCOPE="$(effective_scope "$NAME")"
+  echo "→ Removing (scope=$ESCOPE): $NAME"
+  if ! claude mcp remove -s "$ESCOPE" "$NAME"; then
+    echo "✗ Failed: $NAME (scope=$ESCOPE)" >&2
+    status=1
+  else
+    echo "✓ Removed: $NAME"
+  fi
+done
+
+exit $status

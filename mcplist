@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# List supported MCP server names for mcpadd/mcpremove
+
+echo "Available MCP servers:"
+cat <<'NAMES'
+Context7
+sequential-thinking
+foundry-mcp-server
+rust-docs            [auto-clones github.com/Govcraft/rust-docs-mcp-server if needed]
+fetch
+pdf-reader
+xcode                [auto-clones github.com/r-huijts/xcode-mcp-server if needed]
+perplexity-ask       [requires PERPLEXITY_API_KEY]
+calculator
+playwright
+n8n                  [requires N8N_API_KEY; optional N8N_API_URL]
+brave-search         [requires BRAVE_API_KEY]
+mindmap
+puppeteer            [optional PUPPETEER_ARGS env var]
+tree-sitter-mcp
+iterm-mcp
+NAMES
+
+echo
+echo "Project/local scope only (never user/global):"
+cat <<'RESTRICTED'
+repowise         [project scope only — installs via uv, runs repowise init (~25 min, ~$50)]
+cerebra-legal    [project/local scope only — auto-clones github.com/yoda-digital/mcp-cerebra-legal-server]
+us-legal         [project/local scope only — requires CONGRESS_API_KEY, COURT_LISTENER_API_KEY]
+RESTRICTED
+
+echo
+echo "Tip: Use mcpadd --scope user|project|local NAME"
+echo "     Set MCP_SRC_DIR to control where repos are cloned (default: \$HOME/src)"
+echo "     repowise ignores --scope and always uses project scope"

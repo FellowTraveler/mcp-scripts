@@ -12,12 +12,18 @@ Three commands:
 
 ## Install
 
-Copy the scripts to anywhere on your `PATH` and make them executable:
-
 ```sh
 git clone https://github.com/FellowTraveler/mcp-scripts.git
 cd mcp-scripts
-cp mcpadd mcplist mcpremove ~/bin/   # or /usr/local/bin/
+./install.sh
+```
+
+`install.sh` copies the scripts to `~/bin` if that directory exists, or falls back to `~/.local/bin`. It also marks them executable. If neither directory exists, create one and add it to your `PATH` first.
+
+You can also install manually to any directory on your `PATH`:
+
+```sh
+cp mcpadd mcplist mcpremove ~/bin/
 chmod +x ~/bin/mcpadd ~/bin/mcplist ~/bin/mcpremove
 ```
 

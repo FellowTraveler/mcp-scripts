@@ -46,10 +46,16 @@ add_one() {
     foundry-mcp-server)
       claude mcp add -s "$SCOPE" foundry-mcp-server -- npx -y @pranesh.asp/foundry-mcp-server
       ;;
+    code-index)
+      claude mcp add -s "$SCOPE" code-index -- uvx code-index-mcp
+      ;;
     rust-docs)
       local dir="$SRC_DIR/rust-docs-mcp-server"
       ensure_npm_clone "https://github.com/Govcraft/rust-docs-mcp-server" "$dir"
       claude mcp add -s "$SCOPE" rust-docs -- node "$dir/build/index.js"
+      ;;
+    basic-memory)
+      claude mcp add -s "$SCOPE" basic-memory -- basic-memory mcp
       ;;
     fetch)
       claude mcp add -s "$SCOPE" fetch -- uvx mcp-server-fetch
@@ -106,12 +112,32 @@ add_one() {
         --env "PUPPETEER_ARGS=${PUPPETEER_ARGS}" \
         -- npx -y github:afshawnlotfi/mcp-configurable-puppeteer
       ;;
+    task-master-ai)
+      : "${MODEL:=claude-sonnet-4-20250514}"
+      : "${PERPLEXITY_MODEL:=sonar-pro}"
+      : "${MAX_TOKENS:=64000}"
+      : "${TEMPERATURE:=0.2}"
+      : "${DEFAULT_SUBTASKS:=5}"
+      : "${DEFAULT_PRIORITY:=medium}"
+      claude mcp add -s "$SCOPE" task-master-ai \
+        --env MODEL="$MODEL" \
+        --env PERPLEXITY_MODEL="$PERPLEXITY_MODEL" \
+        --env MAX_TOKENS="$MAX_TOKENS" \
+        --env TEMPERATURE="$TEMPERATURE" \
+        --env DEFAULT_SUBTASKS="$DEFAULT_SUBTASKS" \
+        --env DEFAULT_PRIORITY="$DEFAULT_PRIORITY" \
+        -- npx -y --package=task-master-ai task-master-ai
+      ;;
     tree-sitter-mcp)
       claude mcp add-json -s "$SCOPE" tree-sitter-mcp \
         "{\"command\": \"sh\", \"args\": [\"-c\", \"cd \\\"$(pwd)\\\" && npx @nendo/tree-sitter-mcp --mcp\"]}"
       ;;
     iterm-mcp)
       claude mcp add -s "$SCOPE" iterm-mcp -- npx -y iterm-mcp
+      ;;
+    crypto-market-data)
+      claude mcp add-json -s "$SCOPE" crypto-market-data \
+        '{"type":"http","url":"https://mcp.crypto.com/market-data/mcp"}'
       ;;
     repowise)
       # repowise is ALWAYS project scope — shared via .mcp.json, never user/global
@@ -133,7 +159,7 @@ add_one() {
         fi
       fi
       claude mcp add-json -s project repowise \
-        "{\"command\": \"repowise\", \"args\": [\"mcp\", \"$(pwd)\"], \"description\": \"repowise: codebase intelligence — docs, graph, git signals, dead code, decisions\"}"
+        "{\"command\": \"repowise\", \"args\": [\"mcp\", \"$(pwd)\", \"--transport\", \"stdio\"], \"description\": \"repowise: codebase intelligence — docs, graph, git signals, dead code, decisions\"}"
       ;;
     cerebra-legal)
       # project/local scope only — never user or global

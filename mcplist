@@ -6,7 +6,9 @@ cat <<'NAMES'
 Context7
 sequential-thinking
 foundry-mcp-server
+code-index
 rust-docs            [auto-clones github.com/Govcraft/rust-docs-mcp-server if needed]
+basic-memory
 fetch
 pdf-reader
 xcode                [auto-clones github.com/r-huijts/xcode-mcp-server if needed]
@@ -17,8 +19,10 @@ n8n                  [requires N8N_API_KEY; optional N8N_API_URL]
 brave-search         [requires BRAVE_API_KEY]
 mindmap
 puppeteer            [optional PUPPETEER_ARGS env var]
+task-master-ai       [optional MODEL, PERPLEXITY_MODEL, MAX_TOKENS, TEMPERATURE, DEFAULT_SUBTASKS, DEFAULT_PRIORITY]
 tree-sitter-mcp
 iterm-mcp
+crypto-market-data
 NAMES
 
 echo

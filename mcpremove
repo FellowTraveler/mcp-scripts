@@ -21,7 +21,9 @@ ALL_NAMES=(
   Context7
   sequential-thinking
   foundry-mcp-server
+  code-index
   rust-docs
+  basic-memory
   fetch
   pdf-reader
   xcode
@@ -32,8 +34,10 @@ ALL_NAMES=(
   brave-search
   mindmap
   puppeteer
+  task-master-ai
   tree-sitter-mcp
   iterm-mcp
+  crypto-market-data
   repowise
   cerebra-legal
   us-legal

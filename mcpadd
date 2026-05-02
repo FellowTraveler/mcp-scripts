@@ -158,8 +158,18 @@ add_one() {
           return 1
         fi
       fi
-      claude mcp add-json -s project repowise \
-        "{\"command\": \"repowise\", \"args\": [\"mcp\", \"$(pwd)\", \"--transport\", \"stdio\"], \"description\": \"repowise: codebase intelligence — docs, graph, git signals, dead code, decisions\"}"
+      local out
+      if ! out=$(claude mcp add-json -s project repowise \
+        "{\"command\": \"repowise\", \"args\": [\"mcp\", \"$(pwd)\", \"--transport\", \"stdio\"], \"description\": \"repowise: codebase intelligence — docs, graph, git signals, dead code, decisions\"}" 2>&1); then
+        if echo "$out" | grep -qi "already exists"; then
+          echo "repowise already configured in .mcp.json"
+        else
+          echo "$out" >&2
+          return 1
+        fi
+      else
+        echo "$out"
+      fi
       ;;
     cerebra-legal)
       # project/local scope only — never user or global

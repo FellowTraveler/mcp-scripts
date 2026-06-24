@@ -34,6 +34,14 @@ ensure_npm_clone() {
   fi
 }
 
+_append_env_var() {
+  local key="$1" default_val="$2"
+  local val="${!key:-$default_val}"
+  grep -qE "^${key}=" .env 2>/dev/null && return 0
+  echo "${key}=${val}" >> .env
+  echo "  Added ${key}=${val} to .env"
+}
+
 add_one() {
   local NAME="$1"
   case "$NAME" in
@@ -138,6 +146,40 @@ add_one() {
     crypto-market-data)
       claude mcp add-json -s "$SCOPE" crypto-market-data \
         '{"type":"http","url":"https://mcp.crypto.com/market-data/mcp"}'
+      ;;
+    obsidian)
+      : "${OBSIDIAN_HOST:=127.0.0.1}"
+      : "${OBSIDIAN_PORT:=27124}"
+      _append_env_var OBSIDIAN_API_KEY "${OBSIDIAN_API_KEY:-}"
+      _append_env_var OBSIDIAN_HOST "$OBSIDIAN_HOST"
+      _append_env_var OBSIDIAN_PORT "$OBSIDIAN_PORT"
+      if [ -z "${OBSIDIAN_API_KEY:-}" ]; then
+        echo "Error: OBSIDIAN_API_KEY is not set." >&2
+        echo "  Install the 'Local REST API' community plugin in Obsidian," >&2
+        echo "  copy the API key from its settings, add it to .env, then re-run." >&2
+        return 1
+      fi
+      claude mcp add -s "$SCOPE" obsidian \
+        --env OBSIDIAN_API_KEY="$OBSIDIAN_API_KEY" \
+        --env OBSIDIAN_HOST="$OBSIDIAN_HOST" \
+        --env OBSIDIAN_PORT="$OBSIDIAN_PORT" \
+        -- uvx mcp-obsidian
+      ;;
+    neo4j-cypher)
+      : "${NEO4J_URI:=bolt://localhost:7687}"
+      : "${NEO4J_USERNAME:=neo4j}"
+      : "${NEO4J_PASSWORD:=neo4j}"
+      : "${NEO4J_DATABASE:=neo4j}"
+      _append_env_var NEO4J_URI "$NEO4J_URI"
+      _append_env_var NEO4J_USERNAME "$NEO4J_USERNAME"
+      _append_env_var NEO4J_PASSWORD "$NEO4J_PASSWORD"
+      _append_env_var NEO4J_DATABASE "$NEO4J_DATABASE"
+      claude mcp add -s "$SCOPE" neo4j-cypher \
+        --env NEO4J_URI="$NEO4J_URI" \
+        --env NEO4J_USERNAME="$NEO4J_USERNAME" \
+        --env NEO4J_PASSWORD="$NEO4J_PASSWORD" \
+        --env NEO4J_DATABASE="$NEO4J_DATABASE" \
+        -- uvx mcp-neo4j-cypher
       ;;
     repowise)
       # repowise is ALWAYS project scope — shared via .mcp.json, never user/global

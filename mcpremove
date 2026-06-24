@@ -38,6 +38,8 @@ ALL_NAMES=(
   tree-sitter-mcp
   iterm-mcp
   crypto-market-data
+  obsidian
+  neo4j-cypher
   repowise
   cerebra-legal
   us-legal

@@ -37,7 +37,13 @@ ensure_npm_clone() {
 _append_env_var() {
   local key="$1" default_val="$2"
   local val="${!key:-$default_val}"
-  grep -qE "^${key}=" .env 2>/dev/null && return 0
+  if grep -qE "^${key}=" .env 2>/dev/null; then
+    if [ -z "${!key:-}" ]; then
+      val=$(grep -E "^${key}=" .env 2>/dev/null | cut -d= -f2-)
+      export "${key}=${val}"
+    fi
+    return 0
+  fi
   echo "${key}=${val}" >> .env
   echo "  Added ${key}=${val} to .env"
 }

@@ -48,6 +48,18 @@ _append_env_var() {
   echo "  Added ${key}=${val} to .env"
 }
 
+PLUGIN_MARKETPLACE="${PLUGIN_MARKETPLACE:-claude-plugins-official}"
+
+# LSP plugins are Claude Code plugins (not MCP servers) that wrap a local language-server binary
+_install_lsp_plugin() {
+  local plugin="$1" binary="$2"
+  if ! command -v "$binary" &>/dev/null; then
+    echo "Error: $binary not found on PATH — $plugin needs it" >&2
+    return 1
+  fi
+  claude plugin install "${plugin}@${PLUGIN_MARKETPLACE}" -s "$SCOPE"
+}
+
 add_one() {
   local NAME="$1"
   case "$NAME" in
@@ -80,7 +92,7 @@ add_one() {
     xcode)
       local dir="$SRC_DIR/xcode-mcp-server"
       ensure_npm_clone "https://github.com/r-huijts/xcode-mcp-server" "$dir"
-      claude mcp add -s "$SCOPE" xcode -- node "$dir/build/index.js"
+      claude mcp add -s "$SCOPE" xcode -- node "$dir/dist/index.js"
       ;;
     perplexity-ask)
       if [ -z "${PERPLEXITY_API_KEY:-}" ]; then
@@ -121,7 +133,8 @@ add_one() {
       claude mcp add -s "$SCOPE" mindmap -- uvx mindmap-mcp-server --return-type html
       ;;
     puppeteer)
-      : "${PUPPETEER_ARGS:='{\"headless\":false}'}"
+      local default_puppeteer_args='{"headless":false}'
+      : "${PUPPETEER_ARGS:=$default_puppeteer_args}"
       claude mcp add -s "$SCOPE" puppeteer \
         --env "PUPPETEER_ARGS=${PUPPETEER_ARGS}" \
         -- npx -y github:afshawnlotfi/mcp-configurable-puppeteer
@@ -245,6 +258,12 @@ add_one() {
         --env CONGRESS_API_KEY="${CONGRESS_API_KEY:-}" \
         --env COURT_LISTENER_API_KEY="${COURT_LISTENER_API_KEY:-}" \
         -- npx -y us-legal-mcp
+      ;;
+    rust-analyzer-lsp)
+      _install_lsp_plugin rust-analyzer-lsp rust-analyzer
+      ;;
+    clangd-lsp)
+      _install_lsp_plugin clangd-lsp clangd
       ;;
     *)
       echo "Unknown MCP server: $NAME" >&2

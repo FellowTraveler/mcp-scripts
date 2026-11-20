@@ -43,7 +43,19 @@ ALL_NAMES=(
   repowise
   cerebra-legal
   us-legal
+  rust-analyzer-lsp
+  clangd-lsp
 )
+
+PLUGIN_MARKETPLACE="${PLUGIN_MARKETPLACE:-claude-plugins-official}"
+
+# Names that are Claude Code plugins (removed via 'claude plugin uninstall', not 'claude mcp remove')
+is_plugin() {
+  case "$1" in
+    rust-analyzer-lsp|clangd-lsp) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 # Parse args
 while [[ $# -gt 0 ]]; do
@@ -92,7 +104,12 @@ status=0
 for NAME in "${NAMES[@]}"; do
   ESCOPE="$(effective_scope "$NAME")"
   echo "→ Removing (scope=$ESCOPE): $NAME"
-  if ! claude mcp remove -s "$ESCOPE" "$NAME"; then
+  if is_plugin "$NAME"; then
+    REMOVE_CMD=(claude plugin uninstall -s "$ESCOPE" "${NAME}@${PLUGIN_MARKETPLACE}")
+  else
+    REMOVE_CMD=(claude mcp remove -s "$ESCOPE" "$NAME")
+  fi
+  if ! "${REMOVE_CMD[@]}"; then
     echo "✗ Failed: $NAME (scope=$ESCOPE)" >&2
     status=1
   else

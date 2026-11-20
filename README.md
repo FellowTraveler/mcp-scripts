@@ -65,9 +65,34 @@ mcpremove --all
 | `puppeteer` | Configurable browser automation |
 | `tree-sitter-mcp` | Code parsing via tree-sitter |
 | `iterm-mcp` | iTerm2 terminal control (macOS) |
+| `code-index` | Code indexing and search (requires `uv`) |
+| `basic-memory` | Local knowledge base — requires `basic-memory` on `PATH` |
+| `task-master-ai` | Task management — optional `MODEL`, `PERPLEXITY_MODEL`, `MAX_TOKENS`, `TEMPERATURE`, `DEFAULT_SUBTASKS`, `DEFAULT_PRIORITY` |
+| `crypto-market-data` | Crypto.com market data (remote HTTP server) |
+| `obsidian` | Obsidian vault access — needs the "Local REST API" Obsidian plugin; writes `OBSIDIAN_API_KEY/HOST/PORT` to `.env` |
+| `neo4j-cypher` | Neo4j Cypher queries — writes `NEO4J_URI/USERNAME/PASSWORD/DATABASE` defaults to `.env` |
 | `repowise` | Codebase intelligence — project scope only |
 | `cerebra-legal` | Legal reasoning (auto-cloned, requires Node) — project/local scope only |
 | `us-legal` | Congress.gov + CourtListener — project/local scope only |
+
+## LSP Plugins
+
+These are Claude Code plugins (from the `claude-plugins-official` marketplace),
+not MCP servers, but `mcpadd` / `mcpremove` handle them the same way and with
+the same `--scope` rules.
+
+| Name | Notes |
+|------|-------|
+| `rust-analyzer-lsp` | Rust language server — requires `rust-analyzer` on `PATH` (`rustup component add rust-analyzer`) |
+| `clangd-lsp` | C/C++ language server — requires `clangd` on `PATH`; works best with a `compile_commands.json` |
+
+```sh
+mcpadd rust-analyzer-lsp
+mcpadd --scope project clangd-lsp
+mcpremove clangd-lsp
+```
+
+To install from a different marketplace, set `PLUGIN_MARKETPLACE`.
 
 ## Configuration
 

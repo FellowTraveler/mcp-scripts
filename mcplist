@@ -36,6 +36,13 @@ us-legal         [project/local scope only — requires CONGRESS_API_KEY, COURT_
 RESTRICTED
 
 echo
+echo "Claude Code LSP plugins (installed via 'claude plugin', same --scope rules):"
+cat <<'PLUGINS'
+rust-analyzer-lsp [needs rust-analyzer on PATH — rustup component add rust-analyzer]
+clangd-lsp        [needs clangd on PATH — C/C++; uses compile_commands.json]
+PLUGINS
+
+echo
 echo "Tip: Use mcpadd --scope user|project|local NAME"
 echo "     Set MCP_SRC_DIR to control where repos are cloned (default: \$HOME/src)"
 echo "     repowise ignores --scope and always uses project scope"
